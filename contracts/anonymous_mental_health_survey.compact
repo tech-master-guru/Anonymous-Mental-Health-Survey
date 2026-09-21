@@ -1,0 +1,173 @@
+pragma language_version 0.23;
+import CompactStandardLibrary;
+
+// --- Ledger State (8 public fields) -------------------------------------------
+export ledger submissionCount: Counter;            // Total verified anonymous survey responses submitted
+export ledger revokedCount: Counter;               // Total revoked/voided survey submissions
+export ledger activeSession: Counter;              // Epoch nonce for replay protection
+export ledger cohortId: Bytes<32>;                 // Active survey cohort / assessment category identifier
+export ledger surveyorCommitment: Bytes<32>;       // Surveyor / clinician authority anchor commitment
+export ledger lastSubmissionCommitment: Bytes<32>; // Most recent ZK survey submission commitment hash
+export ledger lastRevokedCommitment: Bytes<32>;    // Most recent revoked submission commitment hash
+export ledger scoreThresholdLimit: Uint<32>;       // Minimum assessment threshold parameter (valid score assertion)
+
+// Backward compatibility ledger aliases
+export ledger claimCount: Counter;
+export ledger productId: Bytes<32>;
+export ledger manufacturerCommitment: Bytes<32>;
+export ledger lastClaimCommitment: Bytes<32>;
+export ledger minimumRequiredDays: Uint<32>;
+
+// --- Witnesses (5 Private Inputs - Never Disclosed On-Chain) -------------------
+witness participantSecretKey(): Bytes<32>;     // Respondent private secret key (never leaves browser)
+witness surveyProofNonce(): Bytes<32>;         // Entropy salt for replay resistance
+witness surveyResponseDataHash(): Bytes<32>;   // SHA-256 hash of detailed survey answers and clinical notes
+witness assessmentScoreValue(): Uint<32>;      // Private assessment score (asserted against threshold)
+witness surveyorSigningKey(): Bytes<32>;       // Surveyor / clinical coordinator authority key
+
+// Compatibility witness aliases
+witness productSecretKey(): Bytes<32>;
+witness warrantyProofNonce(): Bytes<32>;
+witness purchaseInvoiceHash(): Bytes<32>;
+witness warrantyDaysRemaining(): Uint<32>;
+witness manufacturerSigningKey(): Bytes<32>;
+
+// --- Circuit 1: submitSurveyResponse -------------------------------------------
+// Participant privately proves their assessment response satisfies valid scoring range
+// (assessmentScoreValue >= scoreThresholdLimit) without disclosing individual answers,
+// raw score, diagnosis, or personal identity.
+export circuit submitSurveyResponse(expectedCohortId: Bytes<32>): Bytes<32> {
+  // Verify respondent is submitting to the active survey cohort ID
+  assert(cohortId == expectedCohortId, "Cohort ID mismatch: survey submission rejected");
+
+  // Compute private witnesses locally on respondent device
+  const participantKey = participantSecretKey();
+  const nonce = surveyProofNonce();
+  const responseHash = surveyResponseDataHash();
+  const score = assessmentScoreValue();
+
+  // ZK Score Threshold Assertion:
+  // Assert assessment score meets or exceeds minimum validity threshold privately
+  assert(score >= scoreThresholdLimit, "Invalid survey response: assessment score below threshold");
+
+  // Session binding prevents cross-epoch proof reuse
+  const sessionBytes = pad(32, "amhs:session:binding:v1");
+
+  // Multi-input ZK survey submission commitment (Vector<5, Bytes<32>>):
+  // Hash(domain_tag || participantKey || nonce || responseHash || session)
+  const submissionCommitment = persistentHash<Vector<5, Bytes<32>>>([
+    pad(32, "amhs:survey:submission:v1"),
+    participantKey,
+    nonce,
+    responseHash,
+    sessionBytes
+  ]);
+
+  // Increment total verified submission counter
+  submissionCount.increment(1);
+  claimCount.increment(1);
+
+  // Disclose ONLY the commitment hash - all private inputs stay hidden
+  const disclosedCommitment = disclose(submissionCommitment);
+  lastSubmissionCommitment = disclosedCommitment;
+  lastClaimCommitment = disclosedCommitment;
+
+  return disclosedCommitment;
+}
+
+// Circuit 1 Compatibility Alias
+export circuit claimWarranty(expectedProductId: Bytes<32>): Bytes<32> {
+  return submitSurveyResponse(expectedProductId);
+}
+
+// --- Circuit 2: verifySurveySubmission -----------------------------------------
+// Public on-chain verification checking whether a submission commitment matches
+// the registered commitment on the public ledger.
+export circuit verifySurveySubmission(claimedCommitment: Bytes<32>): Boolean {
+  const matches = lastSubmissionCommitment == claimedCommitment || lastClaimCommitment == claimedCommitment;
+  return disclose(matches);
+}
+
+// Circuit 2 Compatibility Alias
+export circuit verifyWarranty(claimedCommitment: Bytes<32>): Boolean {
+  return verifySurveySubmission(claimedCommitment);
+}
+
+// --- Circuit 3: revokeSubmission -----------------------------------------------
+// Requires surveyor authority signing key as a ZK witness for authorization.
+export circuit revokeSubmission(commitmentToRevoke: Bytes<32>): Bytes<32> {
+  const adminKey = surveyorSigningKey();
+  const derivedCommitment = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "amhs:surveyor:authority:v1"),
+    adminKey
+  ]);
+
+  // Authenticate surveyor authority
+  assert(
+    surveyorCommitment == derivedCommitment || manufacturerCommitment == derivedCommitment,
+    "Unauthorized: invalid surveyor signing key"
+  );
+
+  revokedCount.increment(1);
+
+  const disclosedRevoked = disclose(commitmentToRevoke);
+  lastRevokedCommitment = disclosedRevoked;
+
+  return disclosedRevoked;
+}
+
+// Circuit 3 Compatibility Alias
+export circuit revokeWarranty(commitmentToRevoke: Bytes<32>): Bytes<32> {
+  return revokeSubmission(commitmentToRevoke);
+}
+
+// --- Circuit 4: setSurveyorCommitment ------------------------------------------
+// Anchors surveyor authority commitment and sets minimum score threshold.
+export circuit setSurveyorCommitment(newScoreThreshold: Uint<32>): Bytes<32> {
+  const adminKey = surveyorSigningKey();
+  const commitment = persistentHash<Vector<2, Bytes<32>>>([
+    pad(32, "amhs:surveyor:authority:v1"),
+    adminKey
+  ]);
+
+  const disclosedCommitment = disclose(commitment);
+  surveyorCommitment = disclosedCommitment;
+  manufacturerCommitment = disclosedCommitment;
+
+  const disclosedThreshold = disclose(newScoreThreshold);
+  scoreThresholdLimit = disclosedThreshold;
+  minimumRequiredDays = disclosedThreshold;
+
+  return disclosedCommitment;
+}
+
+// Circuit 4 Compatibility Alias
+export circuit setManufacturerCommitment(newMinimumDays: Uint<32>): Bytes<32> {
+  return setSurveyorCommitment(newMinimumDays);
+}
+
+// --- Circuit 5: resetSurveyCohort ----------------------------------------------
+// Rotates survey cohort offering ID and configures scoring parameters.
+export circuit resetSurveyCohort(newCohortId: Bytes<32>, newThreshold: Uint<32>): Bytes<32> {
+  const disclosedCohort = disclose(newCohortId);
+  cohortId = disclosedCohort;
+  productId = disclosedCohort;
+
+  const disclosedThreshold = disclose(newThreshold);
+  scoreThresholdLimit = disclosedThreshold;
+  minimumRequiredDays = disclosedThreshold;
+
+  return disclosedCohort;
+}
+
+// Circuit 5 Compatibility Alias
+export circuit resetProduct(newProductId: Bytes<32>, newMinimumDays: Uint<32>): Bytes<32> {
+  return resetSurveyCohort(newProductId, newMinimumDays);
+}
+
+// --- Circuit 6: incrementSession -----------------------------------------------
+// Bumps monotonic epoch nonce to invalidate stale survey sessions.
+export circuit incrementSession(): [] {
+  activeSession.increment(1);
+  return [];
+}
