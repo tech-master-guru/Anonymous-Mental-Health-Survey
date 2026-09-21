@@ -1,0 +1,9 @@
+pragma language_version 0.23;
+import CompactStandardLibrary;
+
+export ledger roundCounter: Counter;
+
+export circuit bumpRound(): [] {
+  roundCounter.increment(1);
+  return [];
+}
