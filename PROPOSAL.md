@@ -3,6 +3,20 @@
 
 ---
 
+## Live Deployments & Demo Video
+
+> **Interactive Web Application & Live Video Walkthrough**
+
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live%20DApp-000000?style=for-the-badge&logo=vercel)](https://anonymous-mental-health-survey.vercel.app)
+[![AMHS Video Walkthrough](https://img.shields.io/badge/YouTube-Watch%20Live%20Demo-FF0000?style=for-the-badge&logo=youtube)](https://youtu.be/vxdjW446PL0)
+[![Contract Explorer](https://img.shields.io/badge/Midnight-Preview%20Contract-8b5cf6?style=for-the-badge)](https://preview.midnightexplorer.com/contracts/0x2bf4b77c96faf17a985b45b11436edf3538bf6ba287cfbdefd592c571819d897)
+
+- **Live DApp Deployment**: [https://anonymous-mental-health-survey.vercel.app](https://anonymous-mental-health-survey.vercel.app)
+- **YouTube Video Walkthrough**: [https://youtu.be/vxdjW446PL0](https://youtu.be/vxdjW446PL0)
+- **Midnight Preview Explorer**: [https://preview.midnightexplorer.com/contracts/0x2bf4b77c96faf17a985b45b11436edf3538bf6ba287cfbdefd592c571819d897](https://preview.midnightexplorer.com/contracts/0x2bf4b77c96faf17a985b45b11436edf3538bf6ba287cfbdefd592c571819d897)
+
+---
+
 ## 1. Executive Summary
 
 Mental health conditions represent one of the largest public health burdens globally. Accurate clinical and sociological data collection is essential for understanding prevalence, identifying high-risk demographics, and allocating resources effectively.
