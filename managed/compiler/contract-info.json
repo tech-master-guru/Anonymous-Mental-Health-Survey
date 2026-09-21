@@ -1,0 +1,176 @@
+{
+  "contractName": "AnonymousMentalHealthSurvey",
+  "compilerVersion": "0.23.0",
+  "languageVersion": "0.23",
+  "circuits": [
+    {
+      "name": "submitSurveyResponse",
+      "impure": true,
+      "privateWitnesses": [
+        "participantSecretKey",
+        "surveyProofNonce",
+        "surveyResponseDataHash",
+        "assessmentScoreValue"
+      ]
+    },
+    {
+      "name": "verifySurveySubmission",
+      "impure": true,
+      "privateWitnesses": []
+    },
+    {
+      "name": "revokeSubmission",
+      "impure": true,
+      "privateWitnesses": [
+        "surveyorSigningKey"
+      ]
+    },
+    {
+      "name": "setSurveyorCommitment",
+      "impure": true,
+      "privateWitnesses": [
+        "surveyorSigningKey"
+      ]
+    },
+    {
+      "name": "resetSurveyCohort",
+      "impure": true,
+      "privateWitnesses": []
+    },
+    {
+      "name": "incrementSession",
+      "impure": true,
+      "privateWitnesses": []
+    },
+    {
+      "name": "claimWarranty",
+      "impure": true,
+      "privateWitnesses": [
+        "productSecretKey",
+        "warrantyProofNonce",
+        "purchaseInvoiceHash",
+        "warrantyDaysRemaining"
+      ]
+    },
+    {
+      "name": "verifyWarranty",
+      "impure": true,
+      "privateWitnesses": []
+    },
+    {
+      "name": "revokeWarranty",
+      "impure": true,
+      "privateWitnesses": [
+        "manufacturerSigningKey"
+      ]
+    },
+    {
+      "name": "setManufacturerCommitment",
+      "impure": true,
+      "privateWitnesses": [
+        "manufacturerSigningKey"
+      ]
+    },
+    {
+      "name": "resetProduct",
+      "impure": true,
+      "privateWitnesses": []
+    }
+  ],
+  "witnesses": [
+    {
+      "name": "participantSecretKey",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "surveyProofNonce",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "surveyResponseDataHash",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "assessmentScoreValue",
+      "type": "Uint<32>"
+    },
+    {
+      "name": "surveyorSigningKey",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "productSecretKey",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "warrantyProofNonce",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "purchaseInvoiceHash",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "warrantyDaysRemaining",
+      "type": "Uint<32>"
+    },
+    {
+      "name": "manufacturerSigningKey",
+      "type": "Bytes<32>"
+    }
+  ],
+  "ledger": [
+    {
+      "name": "submissionCount",
+      "type": "Counter"
+    },
+    {
+      "name": "revokedCount",
+      "type": "Counter"
+    },
+    {
+      "name": "activeSession",
+      "type": "Counter"
+    },
+    {
+      "name": "cohortId",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "surveyorCommitment",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "lastSubmissionCommitment",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "lastRevokedCommitment",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "scoreThresholdLimit",
+      "type": "Uint<32>"
+    },
+    {
+      "name": "claimCount",
+      "type": "Counter"
+    },
+    {
+      "name": "productId",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "manufacturerCommitment",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "lastClaimCommitment",
+      "type": "Bytes<32>"
+    },
+    {
+      "name": "minimumRequiredDays",
+      "type": "Uint<32>"
+    }
+  ]
+}
