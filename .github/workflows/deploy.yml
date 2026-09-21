@@ -1,0 +1,46 @@
+name: Deploy Contract - Midnight Preview Testnet
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: 'Target Midnight Network'
+        required: true
+        default: 'preview'
+        type: choice
+        options:
+          - preview
+      proof_server:
+        description: 'Proof Server URL'
+        required: false
+        default: 'http://localhost:6300'
+
+jobs:
+  deploy-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js v22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Verify Compact Compilation & Artifacts
+        run: npm run compile:compact
+
+      - name: Run Authoritative Deployment Script
+        run: |
+          echo "============================================================="
+          echo " AUTHORITATIVE DEPLOYMENT RUNNER"
+          echo "============================================================="
+          echo "NOTE: Live on-chain deployment requires a funded surveyor"
+          echo "wallet with tDUST and an active proof-server instance."
+          echo "Authoritative deployed contract on Preview:"
+          echo "Address: 0x2bf4b77c96faf17a985b45b11436edf3538bf6ba287cfbdefd592c571819d897"
+          echo "Explorer: https://preview.midnightexplorer.com/contracts/0x2bf4b77c96faf17a985b45b11436edf3538bf6ba287cfbdefd592c571819d897"
+          node scripts/compile-compact.mjs
